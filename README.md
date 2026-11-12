@@ -9,7 +9,7 @@
 ```elixir
 def deps do
   [
-    {:comment_review, github: "oberernst/comment_review", tag: "v0.1.0", only: [:dev, :test], runtime: false}
+    {:comment_review, github: "oberernst/comment_review", tag: "v0.1.1", only: [:dev, :test], runtime: false}
   ]
 end
 ```
@@ -22,6 +22,19 @@ mix comments lib/my_app/voice # any files or directories
 ```
 
 Each offense prints its file, line and an excerpt. The task exits non-zero when it finds any, so it can sit in a `verify` alias or a CI step.
+
+To skip files, list them in the project config:
+
+```elixir
+def project do
+  [
+    # ...
+    comments: [exclude: ["test/support/fixture.exs"]]
+  ]
+end
+```
+
+A comment run that opens with a tool directive (`credo:`, `sobelow_skip`, `coveralls-ignore`, `dialyzer`) may sit above a definition.
 
 A unit is one run of `#` lines, or one paragraph of a `@moduledoc`, `@doc` or `@typedoc` string. Indented samples, fenced blocks and `iex>` lines are skipped.
 

@@ -216,6 +216,21 @@ defmodule Mix.Tasks.CommentsTest do
 
       assert :doc_channel in flagged(source)
     end
+
+    test "passes a tool directive above a public definition" do
+      source = """
+      defmodule Example do
+        # credo:disable-for-next-line Credo.Check.Refactor.CyclomaticComplexity
+        def total(id), do: id
+
+        # sobelow_skip ["SQL.Query"]
+        # Every clause binds its values with `^`.
+        def query(id), do: id
+      end
+      """
+
+      refute :doc_channel in flagged(source)
+    end
   end
 
   describe "duration_unit" do
@@ -237,6 +252,40 @@ defmodule Mix.Tasks.CommentsTest do
       """
 
       refute :duration_unit in flagged(source)
+    end
+
+    test "reads whole name segments" do
+      source = """
+      defmodule Example do
+        @settle_days 14
+        @overdue_intervals 3
+      end
+      """
+
+      refute :duration_unit in flagged(source)
+    end
+  end
+
+  describe "heredoc strings" do
+    test "closes a heredoc whose delimiter carries trailing code" do
+      source = """
+      defmodule Example do
+        def body(email) do
+          email
+          |> text_body(\"\"\"
+          Visit the portal.
+          \"\"\")
+        end
+
+        def sms(name) do
+          \"\"\"
+          \#{name} is safe and no longer in need of assistance.
+          \"\"\"
+        end
+      end
+      """
+
+      assert flagged(source) == []
     end
   end
 
@@ -303,6 +352,15 @@ defmodule Mix.Tasks.CommentsTest do
       offenses = Comments.review_paths(["lib", "test", "config", "mix.exs"])
 
       assert offenses == []
+    end
+
+    @tag :tmp_dir
+    test "skips excluded files", %{tmp_dir: dir} do
+      fixture = Path.join(dir, "fixture.exs")
+      File.write!(fixture, "# DO NOT ALTER THE CONTENTS OF THIS FILE!!!\n")
+
+      assert [%Offense{check: :register}] = Comments.review_paths([dir])
+      assert Comments.review_paths([dir], [fixture]) == []
     end
   end
 

@@ -78,6 +78,7 @@ defmodule Mix.Tasks.Comments do
   @sentence ~r/(?<=[.!?])\s+(?=[A-Z`*"'(])/
   @code_token ~r/(\|>|->|\bdefp?\b|=)/
   @definition ~r/^(@doc\b|@spec\b|def\s|defdelegate\s)/
+  @directive ~r/^(credo:|sobelow_skip|coveralls-ignore|dialyzer)/
   @attribute ~r/^@([a-z_]+)\s+(?:\d|:timer\.)/
   @doc_attribute ~r/^@(module|type)?doc\s/
   @durations ~w(interval timeout period cooldown backoff retention delay ttl)
@@ -102,9 +103,17 @@ defmodule Mix.Tasks.Comments do
   @spec run([String.t()]) :: :ok
   def run(argv) do
     roots = roots(argv)
-    offenses = review_paths(roots)
+    exclude = excluded()
+    offenses = review_paths(roots, exclude)
 
     report(offenses, roots)
+  end
+
+  defp excluded do
+    config = Mix.Project.config()
+    options = Keyword.get(config, :comments, [])
+
+    Keyword.get(options, :exclude, [])
   end
 
   defp roots([]), do: @default_paths
@@ -118,13 +127,17 @@ defmodule Mix.Tasks.Comments do
   Every offense in the sources under `roots`.
 
   A root names a file or a directory, and a directory is walked for `.ex` and
-  `.exs` sources.
+  `.exs` sources. A file listed in `exclude` is skipped. The task reads that
+  list from `comments: [exclude: [...]]` in the project config.
   """
-  @spec review_paths([String.t()]) :: [Offense.t()]
-  def review_paths(roots) do
+  @spec review_paths([String.t()], [String.t()]) :: [Offense.t()]
+  def review_paths(roots, exclude \\ []) do
+    skipped = MapSet.new(exclude, &Path.expand/1)
+
     roots
     |> Enum.flat_map(&sources/1)
     |> Enum.uniq()
+    |> Enum.reject(&MapSet.member?(skipped, Path.expand(&1)))
     |> Enum.flat_map(&review_file/1)
   end
 
@@ -194,9 +207,10 @@ defmodule Mix.Tasks.Comments do
   defp classify({raw, number}, %{state: :string} = acc) do
     trimmed = String.trim(raw)
 
-    case trimmed do
-      @fence -> %{acc | state: :code}
-      _ -> push(acc, number, :code, "", :none)
+    if String.starts_with?(trimmed, @fence) do
+      %{acc | state: :code}
+    else
+      push(acc, number, :code, "", :none)
     end
   end
 
@@ -443,7 +457,7 @@ defmodule Mix.Tasks.Comments do
     next = unit.last + 1
     following = Map.get(code, next, "")
 
-    (following =~ @definition)
+    (following =~ @definition and not (unit.text =~ @directive))
     |> when_true(file, unit, :doc_channel, "documentation above a public definition")
   end
 
@@ -462,7 +476,11 @@ defmodule Mix.Tasks.Comments do
     end
   end
 
-  defp duration?(name), do: Enum.any?(@durations, &String.contains?(name, &1))
+  defp duration?(name) do
+    segments = String.split(name, "_")
+
+    Enum.any?(@durations, &(&1 in segments))
+  end
 
   defp united?(name), do: Enum.any?(@units, &String.ends_with?(name, "_" <> &1))
 
