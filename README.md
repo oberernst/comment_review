@@ -9,7 +9,7 @@
 ```elixir
 def deps do
   [
-    {:comment_review, github: "oberernst/comment_review", tag: "v0.1.1", only: [:dev, :test], runtime: false}
+    {:comment_review, github: "oberernst/comment_review", tag: "v0.1.2", only: [:dev, :test], runtime: false}
   ]
 end
 ```
@@ -53,6 +53,6 @@ A unit is one run of `#` lines, or one paragraph of a `@moduledoc`, `@doc` or `@
 | `marker` | `TODO`, `FIXME`, `XXX`, `HACK` |
 | `commented_code` | code behind a comment marker |
 | `doc_channel` | documentation in a comment above a public definition |
-| `duration_unit` | a duration attribute whose name omits its unit |
+| `duration_unit` | a duration attribute whose name omits its unit (`_ms`, `_s`, `_seconds`, `_days`, …) |
 
 `aside`, `divider`, `causal_chain`, `justification` and `length` hold at a rate near zero across 13 reference corpora (339k words of Elixir core, ecto, oban, plug, phoenix, liveview and others). `register`, `addressee` and `marker` are house policy. [docs/comment-corpora.md](docs/comment-corpora.md) records the corpora, their SHAs and every rate.

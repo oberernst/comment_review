@@ -254,6 +254,21 @@ defmodule Mix.Tasks.CommentsTest do
       refute :duration_unit in flagged(source)
     end
 
+    test "passes a unit spelled out in full" do
+      source = """
+      defmodule Example do
+        @chain_delay_seconds 60
+        @checkin_throttle_microseconds 1
+        @retention_days 30
+        @retention_months 3
+        @stall_timeout_minutes 5
+        @lease_ttl_hours 1
+      end
+      """
+
+      refute :duration_unit in flagged(source)
+    end
+
     test "reads whole name segments" do
       source = """
       defmodule Example do

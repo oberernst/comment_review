@@ -82,7 +82,7 @@ defmodule Mix.Tasks.Comments do
   @attribute ~r/^@([a-z_]+)\s+(?:\d|:timer\.)/
   @doc_attribute ~r/^@(module|type)?doc\s/
   @durations ~w(interval timeout period cooldown backoff retention delay ttl)
-  @units ~w(ms s us ns)
+  @units ~w(ns us ms s min h d nanoseconds microseconds milliseconds seconds minutes hours days weeks months)
 
   @checks [
     %Check{id: :register, title: "states the present positively"},
